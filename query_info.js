@@ -1,10 +1,12 @@
 const { ethers } = require("ethers");
+require("dotenv").config();
 
-const provider = new ethers.providers.JsonRpcProvider(
-  "http://88.99.94.109:10545"
-);
+const providerUrl = process.env.PROVIDER_URL;
+const privateKey = process.env.PRIVATE_KEY;
+const contractAddress = process.env.CONTRACT_ADDRESS;
 
-const contractAddress = "0x4242424242424242424242424242424242424242";
+const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+
 const contractABI = [
   { inputs: [], stateMutability: "nonpayable", type: "constructor" },
   {
@@ -82,10 +84,10 @@ const contractABI = [
 async function main() {
   const contract = new ethers.Contract(contractAddress, contractABI, provider);
 
-  const root = await contract.get_deposit_root()
+  const root = await contract.get_deposit_root();
   console.log("Contract Version:", root);
 
-  const count = await contract.get_deposit_count()
+  const count = await contract.get_deposit_count();
   console.log("Contract deposit count:", count);
 }
 
