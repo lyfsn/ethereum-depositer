@@ -1,9 +1,13 @@
-const { ContainerType, ByteVectorType, NumberUintType } = require("@chainsafe/ssz");
+const {
+  ContainerType,
+  ByteVectorType,
+  NumberUintType,
+} = require("@chainsafe/ssz");
 const { BigNumber } = require("bignumber.js");
 const { ethers } = require("ethers");
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config();
 
 const providerUrl = process.env.PROVIDER_URL;
 const privateKey = process.env.PRIVATE_KEY;
@@ -92,8 +96,26 @@ const depositDataContainer = new ContainerType({
 
 function buf2hex(buffer) {
   return Array.prototype.map
-    .call(new Uint8Array(buffer), x => `00${x.toString(16)}`.slice(-2))
+    .call(new Uint8Array(buffer), (x) => `00${x.toString(16)}`.slice(-2))
     .join("");
+}
+
+function createLockDirectory(filePath) {
+  const lockDir = `${filePath}-locks`;
+  if (!fs.existsSync(lockDir)) {
+    fs.mkdirSync(lockDir);
+  }
+  return lockDir;
+}
+
+function checkLockFile(lockDir, pubkey) {
+  const lockFilePath = path.join(lockDir, `${pubkey}.lock`);
+  return fs.existsSync(lockFilePath);
+}
+
+function createLockFile(lockDir, pubkey) {
+  const lockFilePath = path.join(lockDir, `${pubkey}.lock`);
+  fs.writeFileSync(lockFilePath, "");
 }
 
 async function processFile(filePath) {
@@ -101,11 +123,23 @@ async function processFile(filePath) {
   const wallet = new ethers.Wallet(privateKey, provider);
   const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
-  const depositData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const depositData = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const lockDir = createLockDirectory(filePath);
 
   for (const data of depositData) {
-    const pubkeyBytes = Buffer.from(data.pubkey, "hex");
-    const withdrawalCredentialsBytes = Buffer.from(data.withdrawal_credentials, "hex");
+    const pubkeyHex = data.pubkey;
+    if (checkLockFile(lockDir, pubkeyHex)) {
+      console.log(
+        `Transaction for pubkey ${pubkeyHex} already processed. Skipping.`
+      );
+      continue;
+    }
+
+    const pubkeyBytes = Buffer.from(pubkeyHex, "hex");
+    const withdrawalCredentialsBytes = Buffer.from(
+      data.withdrawal_credentials,
+      "hex"
+    );
     const amount = data.amount;
     const signatureBytes = Buffer.from(data.signature, "hex");
 
@@ -131,9 +165,8 @@ async function processFile(filePath) {
         transactionParameters
       );
 
-      console.log("Transaction hash:", tx.hash);
-      const receipt = await tx.wait();
-      console.log("Transaction confirmed in block:", receipt.blockNumber);
+      console.log("Transaction sent. Hash:", tx.hash);
+      createLockFile(lockDir, pubkeyHex);
     } catch (error) {
       console.error("Error sending transaction:", error);
     }
@@ -141,14 +174,23 @@ async function processFile(filePath) {
 }
 
 async function main() {
-  const directoryPath = './validator_keys';
-  const files = fs.readdirSync(directoryPath);
-
-  for (const file of files) {
-    if (file.startsWith('deposit_data-') && file.endsWith('.json')) {
-      await processFile(path.join(directoryPath, file));
-    }
+  // Check if a file path argument is provided
+  const args = process.argv.slice(2);
+  if (args.length !== 1) {
+    console.error("Usage: node script.js <file_path>");
+    process.exit(1);
   }
+
+  const filePath = args[0];
+
+  // Check if the file exists
+  if (!fs.existsSync(filePath)) {
+    console.error(`File not found: ${filePath}`);
+    process.exit(1);
+  }
+
+  // Process the specified file
+  await processFile(filePath);
 }
 
 main();
