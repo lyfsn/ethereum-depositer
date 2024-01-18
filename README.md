@@ -1,13 +1,15 @@
-# Ethereum Deposit Contract Interaction Script
+# Ethereum Deposit Contract Processing Script
 
 ## Overview
-This Node.js script enables interaction with an Ethereum deposit contract. It is designed to facilitate transactions such as deposits, using environment variables for configuration and leveraging the Ethereum JavaScript API.
+This Node.js script facilitates the processing of Ethereum deposit data. It reads deposit data from a file, interacts with an Ethereum deposit contract, and executes deposit transactions. The script includes features like environment variable-based configuration, transaction locking to prevent double processing, and comprehensive logging.
 
 ## Features
-- Connect to Ethereum nodes via JSON-RPC.
-- Perform deposit transactions to the specified contract address.
-- Utilize environment variables for secure and flexible configuration.
-- Log transaction details and confirmation.
+- Processes deposit data from a specified file.
+- Connects to Ethereum nodes via JSON-RPC using the ethers.js library.
+- Handles deposit transactions with a given Ethereum deposit contract.
+- Utilizes environment variables for secure configuration.
+- Implements a locking mechanism to prevent duplicate transactions.
+- Logs detailed information about each transaction, including errors.
 
 ## Requirements
 - Node.js
@@ -16,46 +18,59 @@ This Node.js script enables interaction with an Ethereum deposit contract. It is
 - A funded Ethereum wallet
 
 ## Installation
-Before running the script, ensure Node.js and npm are installed on your system. Then, install the required packages using npm:
+Ensure Node.js and npm are installed on your system. Then, install the required dependencies using npm:
 
-```bash
+```
 npm install
 cp .env-example .env
 ```
 
 ### Configuration
-Create a .env file in the root directory of the project, using .env-example as a template. Configure the following variables:
+Set up the .env file in the project root, based on .env-example. Configure these variables:
 
-- PROVIDER_URL: URL of the Ethereum node
-- PRIVATE_KEY: Private key of the Ethereum wallet
-- CONTRACT_ADDRESS: Address of the Ethereum deposit contract
+- `PROVIDER_URL`: URL of the Ethereum JSON-RPC node.
+- `PRIVATE_KEY`: Private key of your Ethereum wallet.
+- `CONTRACT_ADDRESS`: Address of the Ethereum deposit contract.
 
-Optional variables for transaction configuration:
+For transaction configuration, set (optionally):
 
-- DEPOSIT_VALUE: The value to deposit (in ETH)
-- GAS_LIMIT: Gas limit for the transaction
-- GAS_PRICE: Gas price in Gwei
-
-Public key, withdrawal credentials, and signature:
-
-- PUBKEY_HEX
-- WITHDRAWAL_CREDENTIALS_HEX
-- SIGNATURE_HEX
+- `GAS_LIMIT`: Maximum gas for transactions.
+- `GAS_PRICE`: Gas price in Gwei.
 
 ### Usage
+Run the script with a file containing deposit data as an argument:
 
-After configuring the .env file, run the script with:
-
-```bash
-node send.js
 ```
-The script will connect to the Ethereum network, interact with the contract, and log transaction details.
+node script.js <file_path>
+```
+
+The script will:
+1. Read deposit data from the provided file.
+2. Connect to the Ethereum network.
+3. Process each deposit entry:
+   - Check for an existing lock file.
+   - Create a transaction with deposit details.
+   - Send the transaction to the network.
+   - Create a lock file on successful transaction sending.
+4. Log transaction details and errors.
+
+### File Format
+The script expects a JSON file with an array of deposit data objects. Each object should include:
+- `pubkey`
+- `withdrawal_credentials`
+- `amount`
+- `signature`
+
+### Locking Mechanism
+To prevent processing the same deposit data multiple times, the script uses a locking mechanism:
+- Checks for a `.lock` file associated with each `pubkey`.
+- Creates a `.lock` file after successfully processing a transaction.
 
 ### Disclaimer
-This script is provided for educational purposes. Always test thoroughly in a safe environment before using it in production.
-Ensure that your private key and other sensitive details are kept secure.
+This script is for educational and development purposes. Test thoroughly in a safe environment before production use. Secure your private key and sensitive details.
+
 ### License
 MIT
 
 ### Contributing
-Contributions to the script are welcome. Please follow standard coding practices and submit pull requests for any enhancements.
+Contributions are welcome. Please follow standard coding practices and submit pull requests for enhancements or fixes.
