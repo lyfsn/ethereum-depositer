@@ -89,6 +89,9 @@ async function main() {
 
   const count = await contract.get_deposit_count();
   console.log("Contract deposit count:", count);
+
+  const decimCount = ethers.BigNumber.from(count);
+  console.log("Contract deposit count:", decimCount.toString());
 }
 
 main();

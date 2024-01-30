@@ -2,3 +2,4 @@ node_modules
 deposit
 .env
 validator_keys
+*.txt
