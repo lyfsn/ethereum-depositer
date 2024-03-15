@@ -41,7 +41,7 @@ For transaction configuration, set (optionally):
 Run the script with a file containing deposit data as an argument:
 
 ```
-node script.js <file_path>
+node sendByFile.js <file_path>
 ```
 
 The script will:
